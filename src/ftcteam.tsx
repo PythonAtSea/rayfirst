@@ -9,9 +9,9 @@ const fetch = (url: string, options = {}) => fetchOrig(url, { ...options, agent 
 export default function Command() {
   const [items, setItems] = useState([
     {
-      teamName: "Search for a team",
+      teamName: "",
       teamNumber: "",
-      about: true,
+      about: false,
       totalOPR: 0,
       autoOPR: 0,
       teleOPR: 0,
@@ -180,14 +180,22 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
         {
           matchId: 0,
           name: "",
-          redScore: 0,
-          blueScore: 0,
+          longName: "",
+          redTotal: 0,
+          blueTotal: 0,
+          redAuto: 0,
+          blueAuto: 0,
+          redDC: 0,
+          blueDC: 0,
+          redEndgame: 0,
+          blueEndgame: 0,
           red0: 0,
           red1: 0,
           blue0: 0,
           blue1: 0,
           alliance: "",
           win: false,
+          tie: false,
         },
       ],
     },
@@ -223,14 +231,16 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
 
     validEvents.forEach((event) => {
       console.log("Processing event:", event.name);
-      fetch(`https://api.ftcscout.org/rest/v1/events/2024/${event.name}/matches`)
+      fetch(`https://api.ftcscout.j5155.page/rest/v1/events/2024/${event.name}`)
         .then((response) => response.json())
         .then((res) => {
-          if (res.eventCode !== "FTCCMP1EDIS" && res.eventCode !== "USCHSLAOS") {
-            console.log("Fetched matches:", res[0]);
-          }
-          return res;
+          event.humanName = res.name;
         })
+        .catch((error) => {
+          console.error("Error fetching event details:", error);
+        });
+      fetch(`https://api.ftcscout.org/rest/v1/events/2024/${event.name}/matches`)
+        .then((response) => response.json())
         .then((data) => {
           const matches = Array.isArray(data)
             ? data
@@ -260,14 +270,29 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
                         team.alliance === "Blue" && team.station === "Two",
                     )?.teamNumber || 0;
 
-                  const redScore = match.scores?.red?.totalPoints ?? 0;
-                  const blueScore = match.scores?.blue?.totalPoints ?? 0;
-
+                  const redTotal = match.scores?.red?.totalPoints ?? 0;
+                  const blueTotal = match.scores?.blue?.totalPoints ?? 0;
+                  const redAuto = match.scores?.red?.autoPoints ?? 0;
+                  const blueAuto = match.scores?.blue?.autoPoints ?? 0;
+                  const redDC = match.scores?.red?.dcPoints ?? 0;
+                  const blueDC = match.scores?.blue?.dcPoints ?? 0;
+                  const redEndgame = match.scores?.red?.dcParkPoints ?? 0;
+                  const blueEndgame = match.scores?.blue?.dcParkPoints ?? 0;
+                  const name = match.tournamentLevel === "Quals" ? `Qual ${match.id}` : `Playoff ${match.series}`;
+                  const longName =
+                    match.tournamentLevel === "Quals" ? `Qualification ${match.id}` : `Playoff ${match.series}`;
                   return {
                     matchId: match.id,
-                    name: match.name,
-                    redScore,
-                    blueScore,
+                    name,
+                    longName,
+                    redTotal,
+                    blueTotal,
+                    redAuto,
+                    blueAuto,
+                    redDC,
+                    blueDC,
+                    redEndgame,
+                    blueEndgame,
                     red0,
                     red1,
                     blue0,
@@ -275,8 +300,9 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
                     alliance: red0 === parseInt(teamNumber) || red1 === parseInt(teamNumber) ? "red" : "blue",
                     win:
                       red0 === parseInt(teamNumber) || red1 === parseInt(teamNumber)
-                        ? parseInt(redScore) > parseInt(blueScore)
-                        : parseInt(blueScore) > parseInt(redScore),
+                        ? parseInt(redTotal) > parseInt(blueTotal)
+                        : parseInt(blueTotal) > parseInt(redTotal),
+                    tie: parseInt(redTotal) === parseInt(blueTotal),
                   };
                 })
                 .sort((a, b) => a.matchId - b.matchId)
@@ -303,26 +329,71 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
   return (
     <List isLoading={isLoading} isShowingDetail>
       {events.map((event, index) => (
-        <List.Section key={index} title={`Matches for event ${event.name}`}>
+        <List.Section key={index} title={event.humanName}>
           {event.matches.map((match, matchIndex) => (
             <List.Item
               key={matchIndex}
-              title={`Match ${match.matchId}`}
+              title={match.name}
               accessories={
-                match.win
+                match.tie
+                  ? [{ text: { value: `Tie`, color: Color.Yellow } }]
+                  : match.win
                   ? [{ text: { value: `Win`, color: Color.Green } }]
                   : [{ text: { value: `Loss`, color: Color.Red } }]
               }
               detail={
                 <List.Item.Detail
-                  markdown={
-                    "#  " +
-                    match.name +
-                    "\n\n" +
-                    "\n\n| Teams                |       Score |\n" +
-                    "|----------------------|-------------:|\n" +
-                    `| ${match.red0 === parseInt(teamNumber) || match.red1 === parseInt(teamNumber) ? `*${match.red0}*, *${match.red1}*` : `${match.red0}, ${match.red1}`} | ${match.redScore === Math.max(match.redScore, match.blueScore) ? `**${match.redScore}**` : `${match.redScore}`} (Red) |\n` +
-                    `| ${match.blue0 === parseInt(teamNumber) || match.blue1 === parseInt(teamNumber) ? `*${match.blue0}*, *${match.blue1}*` : `${match.blue0}, ${match.blue1}`} | ${match.blueScore === Math.max(match.redScore, match.blueScore) ? `**${match.blueScore}**` : `${match.blueScore}`} (Blue) |`
+                  metadata={
+                    <List.Item.Detail.Metadata>
+                      <List.Item.Detail.Metadata.TagList title="Teams">
+                        <List.Item.Detail.Metadata.TagList.Item text={match.red0.toString()} color={Color.Red} />
+                        <List.Item.Detail.Metadata.TagList.Item text={match.red1.toString()} color={Color.Red} />
+                        <List.Item.Detail.Metadata.TagList.Item text={match.blue0.toString()} color={Color.Blue} />
+                        <List.Item.Detail.Metadata.TagList.Item text={match.blue1.toString()} color={Color.Blue} />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.Separator />
+                      <List.Item.Detail.Metadata.TagList title="Auto">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.redAuto.toString()}
+                          color={match.redAuto === match.blueAuto ? Color.Purple : match.redAuto > match.blueAuto ? Color.Red : Color.SecondaryText}
+                        />
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.blueAuto.toString()}
+                          color={match.blueAuto === match.redAuto ? Color.Purple : match.blueAuto > match.redAuto ? Color.Blue : Color.SecondaryText}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.TagList title="TeleOp">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.redDC.toString()}
+                          color={match.redDC === match.blueDC ? Color.Purple : match.redDC > match.blueDC ? Color.Red : Color.SecondaryText}
+                        />
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.blueDC.toString()}
+                          color={match.blueDC === match.redDC ? Color.Purple : match.blueDC > match.redDC ? Color.Blue : Color.SecondaryText}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.TagList title="Endgame">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.redEndgame.toString()}
+                          color={match.redEndgame === match.blueEndgame ? Color.Purple : match.redEndgame > match.blueEndgame ? Color.Red : Color.SecondaryText}
+                        />
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.blueEndgame.toString()}
+                          color={match.blueEndgame === match.redEndgame ? Color.Purple : match.blueEndgame > match.redEndgame ? Color.Blue : Color.SecondaryText}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.Separator />
+                      <List.Item.Detail.Metadata.TagList title="Total">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.redTotal.toString()}
+                          color={match.redTotal === match.blueTotal ? Color.Purple : match.redTotal > match.blueTotal ? Color.Red : Color.SecondaryText}
+                        />
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={match.blueTotal.toString()}
+                          color={match.blueTotal === match.redTotal ? Color.Purple : match.blueTotal > match.redTotal ? Color.Blue : Color.SecondaryText}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                    </List.Item.Detail.Metadata>
                   }
                 />
               }
