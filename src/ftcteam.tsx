@@ -13,11 +13,17 @@ export default function Command() {
       teamNumber: "",
       about: false,
       totalOPR: 0,
+      totalOPRrank: 0,
       autoOPR: 0,
+      autoOPRrank: 0,
       teleOPR: 0,
+      teleOPRrank: 0,
       egOPR: 0,
+      egOPRrank: 0,
       location: "",
       rookieYear: 0,
+      school: "",
+      sponsors: [],
     },
   ]);
   useEffect(() => {
@@ -49,8 +55,14 @@ export default function Command() {
                 autoOPR: 0,
                 teleOPR: 0,
                 egOPR: 0,
+                totalOPRrank: 0,
+                autoOPRrank: 0,
+                teleOPRrank: 0,
+                egOPRrank: 0,
                 location: `${team.city}, ${team.state}, ${team.country}`,
                 rookieYear: team.rookieYear,
+                school: team.schoolName,
+                sponsors: team.sponsors || [],
               },
             ]);
           }
@@ -84,6 +96,10 @@ export default function Command() {
                     autoOPR: parseFloat(data.auto.value),
                     teleOPR: parseFloat(data.dc.value),
                     egOPR: parseFloat(data.eg.value),
+                    totalOPRrank: data.tot.rank,
+                    autoOPRrank: data.auto.rank,
+                    teleOPRrank: data.dc.rank,
+                    egOPRrank: data.eg.rank,
                   }
                 : item,
             ),
@@ -114,21 +130,27 @@ export default function Command() {
               <List.Item.Detail
                 markdown={""}
                 metadata={
-                  <List.Item.Detail.Metadata>
+                    <List.Item.Detail.Metadata>
                     <List.Item.Detail.Metadata.Label title="Name" text={item.teamName} />
                     <List.Item.Detail.Metadata.Label title="Number" text={item.teamNumber} />
                     <List.Item.Detail.Metadata.Label title="Location" text={item.location} />
                     <List.Item.Detail.Metadata.Label title="Rookie Year" text={item.rookieYear.toString()} />
+                    <List.Item.Detail.Metadata.Label title="Host" text={item.school || "N/A"} />
+                    {item.sponsors.length > 0 ? (
+                      item.sponsors.map((sponsor, index) => (
+                      <List.Item.Detail.Metadata.Label key={index} title={index === 0 ? "Sponsored by:" : ""} text={sponsor} />
+                      ))
+                    ) : (null)}
                     {item.totalOPR !== 0 && (
                       <>
-                        <List.Item.Detail.Metadata.Separator />
-                        <List.Item.Detail.Metadata.Label title="Total OPR" text={item.totalOPR.toFixed(2).toString()} />
-                        <List.Item.Detail.Metadata.Label title="Teleop OPR" text={item.teleOPR.toFixed(2).toString()} />
-                        <List.Item.Detail.Metadata.Label title="Auto OPR" text={item.autoOPR.toFixed(2).toString()} />
-                        <List.Item.Detail.Metadata.Label title="Endgame OPR" text={item.egOPR.toFixed(2).toString()} />
+                      <List.Item.Detail.Metadata.Separator />
+                      <List.Item.Detail.Metadata.Label title="Total OPR" text={item.totalOPR.toFixed(2).toString() + " (Rank: #" + item.totalOPRrank + ")"} />
+                      <List.Item.Detail.Metadata.Label title="Teleop OPR" text={item.teleOPR.toFixed(2).toString() + " (Rank: #" + item.teleOPRrank + ")"} />
+                      <List.Item.Detail.Metadata.Label title="Auto OPR" text={item.autoOPR.toFixed(2).toString() + " (Rank: #" + item.autoOPRrank + ")"} />
+                      <List.Item.Detail.Metadata.Label title="Endgame OPR" text={item.egOPR.toFixed(2).toString() + " (Rank: #" + item.egOPRrank + ")"} />
                       </>
                     )}
-                  </List.Item.Detail.Metadata>
+                    </List.Item.Detail.Metadata>
                 }
               />
             }
@@ -139,31 +161,7 @@ export default function Command() {
               </ActionPanel>
             }
           />
-        ) : (
-          <List.Item
-            key={index}
-            title={item.teamName}
-            subtitle={item.teamNumber}
-            detail={
-              <List.Item.Detail
-                metadata={
-                  <List.Item.Detail.Metadata>
-                    <List.Item.Detail.Metadata.Link
-                      title="Developed by"
-                      target="https://github.com/pythonatsea"
-                      text="pythonatsea"
-                    />
-                    <List.Item.Detail.Metadata.Link
-                      title="FTC Data from"
-                      target="https://ftcscout.org/api"
-                      text="FTCScout"
-                    />
-                  </List.Item.Detail.Metadata>
-                }
-              />
-            }
-          />
-        ),
+        ) : null
       )}
     </List>
   );
@@ -179,6 +177,7 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
       matches: [
         {
           matchId: 0,
+          event: "",
           name: "",
           longName: "",
           redTotal: 0,
@@ -200,7 +199,7 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
       ],
     },
   ]);
-
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   useEffect(() => {
     setEvents([]);
     setIsLoading(true);
@@ -282,6 +281,7 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
                   const longName =
                     match.tournamentLevel === "Quals" ? `Qualification ${match.id}` : `Playoff ${match.series}`;
                   return {
+                    event: event.name,
                     matchId: match.id,
                     name,
                     longName,
@@ -324,16 +324,18 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
         });
       console.log(`Matches for event ${event.name}:`, event.matches.length);
     });
+    setSelectedId(events[0].matches[0]?.matchId.toString() + events[0].matches[0]?.event);
   }, [events, teamNumber]);
 
   return (
-    <List isLoading={isLoading} isShowingDetail>
+    <List isLoading={isLoading} isShowingDetail selectedItemId={selectedId}>
       {events.map((event, index) => (
         <List.Section key={index} title={event.humanName}>
           {event.matches.map((match, matchIndex) => (
             <List.Item
               key={matchIndex}
               title={match.name}
+              id={match.matchId.toString() + match.event}
               accessories={
                 match.tie
                   ? [{ text: { value: `Tie`, color: Color.Yellow } }]
