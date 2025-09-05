@@ -12,12 +12,6 @@
       "title": "FTC Team search",
       "description": "Get quick stats for a FTC team",
       "mode": "view"
-    },
-    {
-      "name": "ftcevent",
-      "title": "FTC Event search",
-      "description": "Get quick stats for a FTC event",
-      "mode": "view"
     }
   ],
   "dependencies": {

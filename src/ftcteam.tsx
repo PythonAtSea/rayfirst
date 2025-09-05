@@ -30,7 +30,7 @@ export default function Command() {
     if (text.trim() !== "") {
       setIsLoading(true);
       latestSearch.current = text;
-      fetch(`https://api.ftcscout.j5155.page/rest/v1/teams/search?searchText=${text}&limit=100`, {
+      fetch(`https://api.ftcscout.org/rest/v1/teams/search?searchText=${text}&limit=100`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       })
@@ -69,7 +69,7 @@ export default function Command() {
   const handleSelectionChange = (id: string | null) => {
     if (id === null) return;
     if (!isNaN(parseInt(id))) {
-      fetch(`https://api.ftcscout.j5155.page/rest/v1/teams/${id}/quick-stats`, {
+      fetch(`https://api.ftcscout.org/rest/v1/teams/${id}/quick-stats`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       })
@@ -204,7 +204,7 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
   useEffect(() => {
     setEvents([]);
     setIsLoading(true);
-    fetch(`https://api.ftcscout.j5155.page/rest/v1/teams/${teamNumber}/events/2024`)
+    fetch(`https://api.ftcscout.org/rest/v1/teams/${teamNumber}/events/2024`)
       .then((response) => response.json())
       .then((data) => {
         interface Event {
@@ -231,7 +231,7 @@ function TeamDetail({ teamNumber }: { teamNumber: string }) {
 
     validEvents.forEach((event) => {
       console.log("Processing event:", event.name);
-      fetch(`https://api.ftcscout.j5155.page/rest/v1/events/2024/${event.name}`)
+      fetch(`https://api.ftcscout.org/rest/v1/events/2024/${event.name}`)
         .then((response) => response.json())
         .then((res) => {
           event.humanName = res.name;
