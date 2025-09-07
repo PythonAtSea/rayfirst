@@ -1,8 +1,10 @@
-# Hello World
+# rayFIRST
 
-This is a sample extension template. Please edit me!
+This is a FTC and (soon) FRC extension for raycast. It uses data from FTCScout and (soon) The Blue Alliance.
 
 # Quick start
+
+Once I finish the FRC implementation I'll publish it on the raycast appstore. Until then, you can use download it and follow the instructions.
 
 Install the require dependencies:
 
@@ -16,6 +18,4 @@ Run the extension in development mode
 npm run dev
 ```
 
-You should be able to find the "Hello" command in Raycast!
-
-See the [Raycast Developer Documentation](https://developers.raycast.com) for more information!
+Right now only FTC team search works, although you can see all of a team's matches sorted by event. You can close the development command once it shows up in raycast, and it'll persist.
